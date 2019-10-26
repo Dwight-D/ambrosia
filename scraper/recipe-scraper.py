@@ -1,11 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
 
-data_dir = "data"
-
-
-
-
 def scrape_html(html):
     
     soup = BeautifulSoup(response, "html.parser")
