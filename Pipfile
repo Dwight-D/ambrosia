@@ -11,7 +11,7 @@ requests = "*"
 nltk = "*"
 spacy = "*"
 beautifulsoup4 = "*"
-urlparse = "*"
+argparse = "*"
 
 [requires]
 python_version = "3.7"

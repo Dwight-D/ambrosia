@@ -1,8 +1,16 @@
 import requests
 from bs4 import BeautifulSoup
 
+def scrape_index(html):
+    soup = BeautifulSoup(html, "html.parser")
+    recipes = soup.find_all("div", { "class": "fixed-recipe-card__info"} )
+    urls = []
+    for recipe in recipes:
+        anchor = recipe.find("a", { "class": "fixed-recipe-card__title-link" } )
+        urls.append(anchor.get("href"))
+    return urls
+
 def scrape_html(html):
-    
     soup = BeautifulSoup(response, "html.parser")
     title = soup.find_all("h1" , {"id": "recipe-main-content"})
     ingredients_html = soup.find_all("span", {"itemprop": "recipeIngredient"})
@@ -18,12 +26,7 @@ def scrape_html(html):
     }
 
 def main():
-    url = 'https://www.allrecipes.com/recipe/214500/sausage-peppers-onions-and-potato-bake/'
-    dataset = "allrecipes"
-    text = load_html(url, dataset)
-    scrape_html(text)
-    print(soup)
+    print("No main method yet")
     
-
 if __name__ == "__main__":
     main()
