@@ -2,9 +2,18 @@ import requests
 import argparse
 import sys
 import os
+import json
 from bs4 import BeautifulSoup
 
-def scrape_index(html):
+def parse_index(html):
+    """Parse an index page containing multiple links to other recipe pages
+    
+    Arguments:
+        html {string} -- The HTML of the index page to scrape
+    
+    Returns:
+        urls[{string}] -- A list of recipe URLs found on the page
+    """
     soup = BeautifulSoup(html, "html.parser")
     recipes = soup.find_all("div", { "class": "fixed-recipe-card__info"} )
     urls = []
@@ -13,37 +22,56 @@ def scrape_index(html):
         urls.append(anchor.get("href"))
     return urls
 
-def scrape_html(html):
-    soup = BeautifulSoup(html, "html.parser")
-    title = soup.find_all("h1" , {"id": "recipe-main-content"})
+def parse_ingredients(soup):
     ingredients_html = soup.find_all("span", {"itemprop": "recipeIngredient"})
-    ingredients_list = []
-    for ingr in ingredients_html:
-        str = ingr.string
-        ingredients_list.append(str)
+    return list(map(lambda ingredient: ingredient.string, ingredients_html))
 
-    ingredients = map(lambda ingredient: ingredient.string, ingredients_html)
+def parse_directions(soup):
+    directions = soup.find("div", { "class": "directions--section" } )
+    time = directions.find_all("li", { "class": "prepTime__item" } )
+    time_list = list(filter(lambda item: item, map(lambda item: item.get("aria-label"), time)))
 
-    recipe = { "title": title.string,
-                "ingredients": ingredients
+    steps = list(filter(lambda string: string, map(lambda step: step.get_text().strip(), directions.find_all("li", { "class": "step" } ))))
+    return time_list, steps
+
+def parse_recipe(recipe):
+    title = recipe.find("h1" , {"id": "recipe-main-content"}).string
+    ingredients = parse_ingredients(recipe)
+    time, directions = parse_directions(recipe)
+
+    recipe = { "title": title,
+                "ingredients": ingredients,
+                "time": time,
+                "directions": directions
     }
+    print(json.dumps(recipe))
+    
+def parse_html(html):
+    soup = BeautifulSoup(html, "html.parser")
+    recipe = soup.find("div" , {"class": "recipe-container-outer"})
+    if not recipe:
+        return
+    parse_recipe(soup)
 
 def read_html_from_file(path):
     with open(path, mode="r") as file:
-        return file.readlines
+        output = ""
+        return output.join(file.readlines())
 
 def read_recursive(paths):
     for path in paths:
         if not os.path.exists(path):
             continue
         for (dirpath, dirnames, filenames) in os.walk(path):
+            filenames = map(lambda path: dirpath + "/" + path, filenames)
+            dirnames = map(lambda path: dirpath + "/" + path, dirnames)
             read_from_paths(filenames)
             read_recursive(dirnames)
 
 def read_from_paths(paths):
     for path in paths:
         html = read_html_from_file(path)
-        scrape_html(html)
+        parse_html(html)
 
 def read_from_args(args):
     if args.recursive:
@@ -55,9 +83,9 @@ def read_from_stdin(args):
     print("Reading from stdin not yet implemented")
         
 def setup_args():
-    parser = argparse.ArgumentParser(description="Scrape recipe data from HTML strings")
-    parser.add_argument("paths", nargs="+", help="paths to HTML files to scrape")
-    parser.add_argument("--recursive", "-r", action="store_true", help="Paths are treated as paths to directories containing files to be scraped recursively")
+    parser = argparse.ArgumentParser(description="parse recipe data from HTML strings")
+    parser.add_argument("paths", nargs="+", help="paths to HTML files to parse")
+    parser.add_argument("--recursive", "-r", action="store_true", help="Paths are treated as paths to directories containing files to be parsed recursively")
     return parser.parse_args()
 
 def main():
