@@ -8,12 +8,18 @@ import recipe_scraper
 data_dir = "data"
 
 def download_html(url, dataset):
-    response = requests.get(url)  
     path = get_path_and_create_dir(url, dataset)
-    with open(path, 'w+', encoding="utf-8") as file:
-        for line in response.text:
-            file.write(line)
-    return path
+    if os.path.exists(path):
+        sys.stderr.write("Already present: " + path +'\n')
+        return path
+    try:
+        response = requests.get(url, timeout=10)  
+        with open(path, 'w+', encoding="utf-8") as file:
+            for line in response.text:
+                file.write(line)
+        return path
+    except:
+        print("Connection failed while fetching " + url)
 
 def get_path_and_create_dir(url, dataset):
     name = re.sub(r'^.*\/([^/]*)-.*', r'\1', url)
@@ -29,7 +35,10 @@ def make_directory(path):
 def read_from_stdin(args):
     for url in sys.stdin:
         url = url.strip()
-        print(download_html(url, args.dataset))
+        if args.recursive:
+            get_recipe_urls_from_index(url)
+        else:
+            print(download_html(url, args.dataset))
     
 def read_from_args(args):
     if args.recursive:
@@ -39,14 +48,15 @@ def read_from_args(args):
         print(download_html(url, args.dataset))
 
 def read_recursive(args):
-    index_url = args.url
-    dataset = args.dataset
-    recipe_urls = get_recipe_urls_from_index(index_url)
-    save_urls(recipe_urls, dataset)
+    for url in args.url:
+        get_recipe_urls_from_index(url)
 
 def get_recipe_urls_from_index(url):
-    response = requests.get(url)
-    return recipe_scraper.scrape_index(response.text)
+    try:
+        response = requests.get(url, timeout=10)
+        return recipe_scraper.parse_index(response.text)
+    except:
+        print("Connection failed while fetching " + url)
 
 def save_urls(urls, dataset):
     path = data_dir + "/" + dataset + "/" + "recipes.url"

@@ -16,11 +16,9 @@ def parse_index(html):
     """
     soup = BeautifulSoup(html, "html.parser")
     recipes = soup.find_all("div", { "class": "fixed-recipe-card__info"} )
-    urls = []
     for recipe in recipes:
         anchor = recipe.find("a", { "class": "fixed-recipe-card__title-link" } )
-        urls.append(anchor.get("href"))
-    return urls
+        print(anchor.get("href"))
 
 def parse_ingredients(soup):
     ingredients_html = soup.find_all("span", {"itemprop": "recipeIngredient"})
