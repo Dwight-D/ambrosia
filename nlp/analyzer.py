@@ -1,20 +1,24 @@
 import spacy
 import argparse
 import sys
+import preproc
 from spacy.lang.en import English
 from spacy.matcher import Matcher
+from spacy.cli.download import download as spacy_download
+
+NLP = None
+MODEL = "en_core_web_sm"
+
+def setup_nlp(text):
+    text = preproc.clean(text)
+    nlp = spacy.load("en_core_web_sm")
+    return nlp(text)
 
 def find_ingredients(text):
-    nlp = English()
-    doc = nlp(text)
-    for token in doc:
-        if token.like_num:
-            i = token.i
-            next = doc[i + 1]
-            if next.is_alpha:
-                print(doc[i:i+5].text.strip())
-    print(doc.text)
-
+    doc = setup_nlp(text)
+    for sentence in doc.sents:
+        print(sentence)
+        
 def read_from_args(args):
     for path in args.paths:
         txt = read_from_file(path)
@@ -30,7 +34,22 @@ def setup_args():
     parser.add_argument("paths", nargs="*", help="paths to text files to parse")
     return parser.parse_args()
 
+def read_from_stdin(args):
+    print("Reading from stdin not yet implemented")
+    exit
+
+def setup_model():
+    global NLP
+    global MODEL
+    try:
+        NLP = spacy.load(MODEL)
+    except OSError:
+        print(f"Spacy models '{MODEL}' not found.  Downloading and installing.")
+        spacy_download(MODEL)
+        NLP = spacy.load(MODEL)
+
 def main():
+    setup_model()
     args = setup_args()
     if len(sys.argv) > 1:
         read_from_args(args)
