@@ -11,13 +11,14 @@ MODEL = "en_core_web_sm"
 
 def setup_nlp(text):
     text = preproc.clean(text)
-    nlp = spacy.load("en_core_web_sm")
+    nlp = spacy.load(MODEL)
     return nlp(text)
 
 def find_ingredients(text):
     doc = setup_nlp(text)
-    for sentence in doc.sents:
-        print(sentence)
+    for token in doc:
+        if token.pos_ == 'NOUN':
+            print(token)
         
 def read_from_args(args):
     for path in args.paths:

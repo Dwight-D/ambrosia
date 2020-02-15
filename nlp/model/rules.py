@@ -1,0 +1,3 @@
+FOOD_STUFF = { 'POS': 'NOUN' }
+
+INGREDIENT = {}
